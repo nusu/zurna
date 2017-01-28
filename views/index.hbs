@@ -1,0 +1,67 @@
+
+	
+	<input type="text" name="uri" class="uri" data-last="" placeholder="Spotif Song URI">
+
+	<button class="btn">Add Song</button>
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<a href="/play">Şarkıları Oynatmaya Başla</a>
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<div class="message">
+	
+</div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script>
+	$(function(){
+		$(".btn").click(function(){
+			var uri = $(".uri").val();
+			var last = $(".uri").attr("data-last");
+			if( last !== uri ){
+				$.ajax({
+				  method: "GET",
+				  url: "/add-song",
+				  data: { uri: uri }
+				})
+				  .done(function( msg ) {
+				    $(".message").append("katkıların için tşk cnm");
+				    $(".message").append(msg);
+	    			$(".uri").attr("data-last", uri);
+				  });
+			}else{
+				alert("ya yarrağımın başı sistemin neden kafasını sikiyorsun öküz gibi basmasana anladık amına koyayım");
+			}
+
+		});
+	});
+</script>
