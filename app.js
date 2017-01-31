@@ -5,7 +5,9 @@ var os 			= require('os'),
 	path		= require('path'),
 	hbs			= require('hbs'),
 	config		= require('./config'),
-	exec 		= require('child_process').exec;
+	exec 		= require('child_process').exec,
+	spotify 	= require('spotify-node-applescript'),
+	fs 			= require('fs');
 
 
 //
@@ -13,7 +15,7 @@ var os 			= require('os'),
 //
 require('dns').lookup(require('os').hostname(), function (err, add, fam) {
 
-	console.log('spotify is ready to arrange songs right now \n your friends can acces interface via \n Extarnal UI: '+add+':3000');
+	console.log('spotify is ready to arrange songs right now \n your friends can acces interface via \n Extarnal UI: '+add+':3079');
 
 })
 
@@ -38,25 +40,213 @@ app.get('/', function(req, res){
 
 })
 
-app.get('/play', function(req,res){
+var songDuration;
+var songUri;
 
-	res.send(req.params.uri);
 
-	function puts(error, stdout, stderr) { console.log(stdout) }
-	exec("spotify play uri $URI", {env: {'URI': req.param('uri')}}, puts);
+//
+// Song Interval
+//
+spotify.getTrack(function(err, track){
+
+	songDuration = track.duration;
+	songUri 	 = track.uri;
+
+});
+
+var songInterval = new Timer(function() {
+
+    spotify.getState(function(err, state){
+    
+    	//console.log(state);
+
+		var duration = Math.round(songDuration / 1000);
+		
+		//
+		//console.log("şarkı uzunluğu: " + duration);
+		//console.log("şuan:           " + state.position + "\n");
+		//
+
+		if( state.position == duration - 3 ){
+			console.log("bitti");
+
+			//
+			// delete new song
+			//
+
+			fs.readFile('./data/storage.txt', 'utf8', function(err, data) {
+	
+				// get data and collapse it 
+				var parts = data.split("\n").slice(0);
+
+				// get current and next song
+				var current = parts[0],
+					next	= parts[1];
+
+				//
+				//console.log(parts);
+				//
+
+				// check
+				// and
+				// delete it
+				parts.splice(current, 1);
+
+				// now first element of ${parts} is deleted
+				// split lines
+				var updated = parts.join("\n");
+
+				// save it
+				fs.writeFile('./data/storage.txt', updated, function (err) {
+				    if (err) 
+				        return console.log(err);
+				    console.log('şu anki şarkı listeden silindi');
+				});
+
+
+				if( next ){
+
+					spotify.playTrack(next, function(){
+					   
+					    //
+						// get next song data
+						//
+						console.log("çalıyorum");
+
+						spotify.getTrack(function(err, track){
+
+							songDuration = track.duration;
+							duration = Math.round(songDuration / 1000);
+
+							console.log(duration);
+
+						});
+
+					});
+
+
+				}else{
+
+					songInterval.stop();
+					console.log("listede şarkı kalmadı dost ateşi");
+
+				}
+
+
+
+			});
+		}
+
+	});
+
+}, 900);
+
+
+
+app.get('/play', function( req,res ){
+	
+	fs.readFile('./data/storage.txt', 'utf8', function(err, data) {
+
+		// get data and collapse it 
+		var parts = data.split("\n").slice(0);
+
+		// get current song
+		var current = parts[0];
+
+		spotify.playTrack(current, function(){
+		    
+		    spotify.getTrack( function(err, track){
+		    	songDuration = track.duration;
+		    });
+
+		    setTimeout(function(){
+		    	songInterval.start();
+		    }, 1000);
+
+		});
+
+		res.json({"status": "playing"});
+	});
 
 })
 
-setInterval(function () {
-    console.log('timeout completed'); 
-}, 1000); 
+
+//
+// Add song
+//
+app.get('/add-song', function(req, res){
+
+	var data;
+
+	// check if there any songs in order
+	fs.readFile('./data/storage.txt', 'utf8', function(err, data) {
+		var parts = data.split("\n").slice(0);
+		var current 	= parts[0],
+			lastElement = parts[parts.length-1];
+
+		//
+		//console.log(parts);
+		//
+
+		var data = (current ? "\n"+req.param("uri") : req.param("uri"));
+	
+		//
+		//console.log(data);
+		//
+
+		if(req.param("uri") != lastElement){
+			fs.appendFileSync('./data/storage.txt', data , {encoding: 'utf8'});
+
+			spotify.getTrack(function(err, track){
+
+				songDuration = track.duration;
+
+				res.json(track);
+			});
+
+		}else{
+
+			res.json({"status": false});
+
+		}
+
+	});
+
+})
+
+
+
+function Timer(fn, t) {
+    var timerObj = setInterval(fn, t);
+
+    this.stop = function() {
+        if (timerObj) {
+            clearInterval(timerObj);
+            timerObj = null;
+        }
+        return this;
+    }
+
+    // start timer using current settings (if it's not already running)
+    this.start = function() {
+        if (!timerObj) {
+            this.stop();
+            timerObj = setInterval(fn, t);
+        }
+        return this;
+    }
+
+    // start with new interval, stop current interval
+    this.reset = function(newT) {
+        t = newT;
+        return this.stop().start();
+    }
+}
+
+
+
 
 app.listen(3079, function () {
   console.log('spotify app listening on port 3079!');
 })
 
-
-
-//
-// check spotify status
-//
