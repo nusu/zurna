@@ -13,5 +13,23 @@
     "hbs": "^4.0.1",
     "mongoose": "~4.4",
     "spotify-node-applescript": "^1.0.0"
-  }
+  },
+  "description": "control spotify with your friends with lan network",
+  "main": "app.js",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nusu/zurna.git"
+  },
+  "keywords": [
+    "spotify",
+    "osx",
+    "cli"
+  ],
+  "author": "Nusu Alabuğa",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nusu/zurna/issues"
+  },
+  "homepage": "https://github.com/nusu/zurna#readme"
 }
